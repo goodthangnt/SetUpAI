@@ -63,7 +63,7 @@ services:
       - WEBHOOK_URL=https://${DOMAIN}
       - GENERIC_TIMEZONE=Asia/Ho_Chi_Minh
     volumes:
-      - $N8N_DIR:/home/node/.n8n
+      - $N8N_DIR/n8n_data:/home/node/.n8n
 
   caddy:
     image: caddy:2
