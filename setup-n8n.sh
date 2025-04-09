@@ -35,16 +35,45 @@ fi
 # Sử dụng thư mục /home trực tiếp
 N8N_DIR="/home/n8n"
 
-# Cài đặt Docker và Docker Compose
-apt-get update
-apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
-add-apt-repository -y "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-apt-get update
-apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose
+# Kiểm tra Docker và Docker Compose
+if ! command -v docker &> /dev/null; then
+    echo "Docker không được cài đặt. Bắt đầu cài đặt..."
+    
+    # Cài đặt Docker và Docker Compose
+    apt-get update
+    apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+    add-apt-repository -y "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+    apt-get update
+    apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose
+    
+    if ! command -v docker-compose &> /dev/null; then
+        echo "Cài đặt Docker Compose thất bại."
+        exit 1
+    fi
+fi
 
 # Tạo thư mục cho n8n
 mkdir -p $N8N_DIR
+
+# Kiểm tra và đặt quyền cho thư mục n8n_data
+if [ ! -d "$N8N_DIR/n8n_data" ]; then
+    mkdir -p "$N8N_DIR/n8n_data"
+fi
+
+# Đặt quyền cho thư mục n8n_data
+chown -R 1000:1000 "$N8N_DIR/n8n_data"
+chmod -R 755 "$N8N_DIR/n8n_data"
+
+# Kiểm tra quyền truy cập
+if [ ! -w "$N8N_DIR/n8n_data" ]; then
+    echo "Không có quyền ghi vào thư mục $N8N_DIR/n8n_data. Vui lòng kiểm tra và đặt quyền đúng."
+    exit 1
+fi
+
+# Đặt quyền cho thư mục n8n
+chown -R 1000:1000 $N8N_DIR
+chmod -R 755 $N8N_DIR
 
 # Tạo file docker-compose.yml
 cat << EOF > $N8N_DIR/docker-compose.yml
@@ -90,13 +119,12 @@ ${DOMAIN} {
 }
 EOF
 
-# Đặt quyền cho thư mục n8n
-chown -R 1000:1000 $N8N_DIR
-chmod -R 755 $N8N_DIR
-
 # Khởi động các container
 cd $N8N_DIR
-docker-compose up -d
+if ! docker-compose up -d; then
+    echo "Khởi động Docker Compose thất bại."
+    exit 1
+fi
 
 echo "N8n đã được cài đặt và cấu hình với SSL sử dụng Caddy. Truy cập https://${DOMAIN} để sử dụng."
 echo "Các file cấu hình và dữ liệu được lưu trong $N8N_DIR"
