@@ -121,7 +121,7 @@ EOF
 
 # Khởi động các container
 cd $N8N_DIR
-if ! docker-compose up -d; then
+if ! docker compose up -d; then
     echo "Khởi động Docker Compose thất bại."
     exit 1
 fi
